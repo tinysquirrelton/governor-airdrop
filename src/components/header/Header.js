@@ -112,15 +112,15 @@ export default class Header extends Component {
 
   getHash = (item) => {
     return (
-      <HashLink
-        to={item.to}
+      <a
+        href={item.to}
         className="menu-item"
         onClick={() => {
           this.setState({ isExpanded: null, isItemOpen: null });
         }}
       >
         {item.title}
-      </HashLink>
+      </a>
     );
   };
 
