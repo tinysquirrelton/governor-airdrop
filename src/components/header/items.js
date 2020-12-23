@@ -6,9 +6,9 @@ export const solutions = {
 export const farm = { to: "/", title: "Airdrop" };
 
 export const resources = [
-  { to: "/", title: "Blog" },
+  { to: "https://dunk.medium.com/", title: "Blog" },
   { to: "https://gdao.network/", title: "Forum" },
-  { to: "/", title: "Litepaper" },
+  { to: "https://governordao.org/papers/GDAO-Litepaper.pdf", title: "Litepaper" },
 ];
 
 export const social = [
