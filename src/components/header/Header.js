@@ -1,9 +1,8 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { HashLink } from "react-router-hash-link";
 import Logo from "../../assets/logos/governor-plain.png";
 import { Menu, X, ChevronDown, ChevronUp } from "react-feather";
-import { solutions, farm, resources, social } from "./items";
+import { solutions, applications, resources, social } from "./items";
 import "./style.scss";
 
 export default class Header extends Component {
@@ -20,14 +19,11 @@ export default class Header extends Component {
 
   componentDidMount() {
     window.addEventListener("resize", this.onResize);
-    window.addEventListener("hashchange", this.hashHandler, false);
-
     this.onResize();
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.onResize());
-    window.removeEventListener("hashchange", this.onResize());
   }
 
   onResize = () => {
@@ -36,14 +32,6 @@ export default class Header extends Component {
       isMedium: window.innerWidth >= 768 && window.innerWidth < 992,
       isSmall: window.innerWidth < 768,
     });
-  };
-
-  hashHandler = () => {
-    const id = window.location.hash.slice(1);
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView();
-    }
   };
 
   onToggleDrawer = () => {
@@ -82,7 +70,7 @@ export default class Header extends Component {
                 this.setState({ isExpanded: null, isItemOpen: null });
                 if (c.title === "Litepaper") {
                   window.open(
-                    "https://governordao.org/papers/GDAO-Litepaper.pdf",
+                    process.env.PUBLIC_URL + "/papers/GDAO-Litepaper.pdf",
                     "_blank"
                   );
                 }
@@ -96,35 +84,25 @@ export default class Header extends Component {
     );
   };
 
+  scrollTo = (item) => {
+    // Main app
+    return (
+      <div
+        className="menu-item"
+        onClick={() => {
+          this.setState({ isExpanded: null, isItemOpen: null });
+          document
+            .getElementById(item.to)
+            ?.scrollIntoView({ behavior: "smooth" });
+        }}
+      >
+        {item.title}
+      </div>
+    );
+  };
+
   getLink = (item) => {
-    return (
-      <Link
-        to={item.to}
-        className="menu-item"
-        onClick={() => {
-          this.setState({ isExpanded: null, isItemOpen: null });
-        }}
-      >
-        {item.title}
-      </Link>
-    );
-  };
-
-  getHash = (item) => {
-    return (
-      <a
-        href={item.to}
-        className="menu-item"
-        onClick={() => {
-          this.setState({ isExpanded: null, isItemOpen: null });
-        }}
-      >
-        {item.title}
-      </a>
-    );
-  };
-
-  getApp = (item) => {
+    // Other apps
     return (
       <a
         href={item.to}
@@ -149,8 +127,8 @@ export default class Header extends Component {
           <div
             className={`xs-nav-menu ${this.state.isExpanded ? "expanded" : ""}`}
           >
-            {this.getHash(solutions)}
-            {this.getApp(farm)}
+            {this.getLink(solutions)}
+            {this.getAccordion("applications", applications)}
             {this.getAccordion("resources", resources)}
             {this.getAccordion("social", social)}
           </div>
@@ -162,8 +140,8 @@ export default class Header extends Component {
       return (
         <>
           <div className="lg-nav-menu">
-            {this.getHash(solutions)}
-            {this.getApp(farm)}
+            {this.getLink(solutions)}
+            {this.getAccordion("applications", applications)}
             {this.getAccordion("resources", resources)}
             {this.getAccordion("social", social)}
           </div>
@@ -174,12 +152,12 @@ export default class Header extends Component {
     return (
       <div className="header-container">
         <div className="header-content">
-          <a href="https://governordao.org" className="logo-container">
+          <Link to="/" className="logo-container">
             <div className="logo-img">
               <img src={Logo} alt="logo" />
             </div>
             <div className="logo-title">Governor</div>
-          </a>
+          </Link>
           {this.state.isSmall || this.state.isMedium ? <XSNav /> : <LGNav />}
         </div>
       </div>
