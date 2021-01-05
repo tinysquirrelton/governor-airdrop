@@ -70,7 +70,7 @@ export default class Header extends Component {
                 this.setState({ isExpanded: null, isItemOpen: null });
                 if (c.title === "Litepaper") {
                   window.open(
-                    process.env.PUBLIC_URL + "/papers/GDAO-Litepaper.pdf",
+                    "https://governordao.org/papers/GDAO-Litepaper.pdf",
                     "_blank"
                   );
                 }

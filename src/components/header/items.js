@@ -10,7 +10,7 @@ export const applications = [
 ];
 
 export const resources = [
-  { to: "/", title: "Blog" },
+  { to: "https://dunk.medium.com/", title: "Blog" },
   { to: "https://gdao.network/", title: "Forum" },
   { to: "/", title: "Litepaper" },
   { to: "https://governor.social/", title: "Archieve" },

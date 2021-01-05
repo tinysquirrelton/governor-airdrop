@@ -173,6 +173,7 @@ class Airdrop extends Component {
     this.onResize();
     this.onAccountChange();
     this.onNetworkChange();
+	this.setConnection();
 	
 	let now = new Date().getTime();
 	let startCountdown = this.merkle.startTimestamp * 1000;
@@ -190,7 +191,6 @@ class Airdrop extends Component {
 		seconds = (seconds < 10) ? "0"+seconds : seconds; 
 		
 		let calculatedCountdownString = hours + ":" + minutes + ":" + seconds;
-		//document.getElementById("countdownToStart").innerHTML = calculatedCountdownString;
 		self.setState({ countdownString: calculatedCountdownString });
 
 		if (distance < 0) {
