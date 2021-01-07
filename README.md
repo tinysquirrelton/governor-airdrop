@@ -1,4 +1,4 @@
-# GOVERNOR DAO - Main
+# GOVERNOR DAO - Airdrop
 
 To my frens working on this project,
 
