@@ -7,6 +7,7 @@ import OnPageChange from "../utilities/hocs/OnPageChange";
 
 // HEADER & FOOTER
 import Header from "../components/header/Header";
+import Footer from "../components/footer/Footer";
 
 // LAZY IMPORT
 const Airdrop = lazy(() => import("../components/airdrop"));
@@ -22,10 +23,13 @@ export default class Routes extends Component {
               <Route exact path={"/"} component={Airdrop} />
               <Route
                 path={"/404"}
-                render={() => window.location.replace("https://governordao.org")}
+                render={() =>
+                  window.location.replace("https://governordao.org")
+                }
               />
               <Redirect to={"/404"} />
             </Switch>
+            <Footer />
           </OnPageChange>
         </Suspense>
       </BrowserRouter>
