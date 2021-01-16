@@ -5,12 +5,18 @@
   width: 100%;
   background-color: #272727;
   display: flex;
-  position: absolute;
+  position: relative;
   justify-content: center;
   align-items: center;
   padding: 50px 0 25px 0;
   z-index: 10;
-  top: 100vh;
+  top: 15vh;
+  @include md {
+    top: 24.5vh;
+  }
+  @include lg {
+    top: 35vh;
+  }
 
   .footer-container {
     display: flex;
