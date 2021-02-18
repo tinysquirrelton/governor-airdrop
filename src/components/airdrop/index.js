@@ -346,12 +346,6 @@ class Airdrop extends Component {
                 </div>
               </div>
               <div className="details-item">
-                <div className="title">Burned GDAO</div>
-                <div className="value">
-                  {this.state.burned.toLocaleString()}
-                </div>
-              </div>
-              <div className="details-item">
                 <div className="title">Reward Pool</div>
                 <div className="value">
                   {this.state.reward.toLocaleString()}
