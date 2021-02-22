@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Link } from "react-router-dom";
 import Logo from "../../assets/logos/governor-plain.png";
 import { Menu, X, ChevronDown, ChevronUp } from "react-feather";
 import { statistics, applications, resources, social } from "./items";
@@ -80,23 +79,6 @@ export default class Header extends Component {
             </a>
           ))}
         </div>
-      </div>
-    );
-  };
-
-  scrollTo = (item) => {
-    // Main app
-    return (
-      <div
-        className="menu-item"
-        onClick={() => {
-          this.setState({ isExpanded: null, isItemOpen: null });
-          document
-            .getElementById(item.to)
-            ?.scrollIntoView({ behavior: "smooth" });
-        }}
-      >
-        {item.title}
       </div>
     );
   };
