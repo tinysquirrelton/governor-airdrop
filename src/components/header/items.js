@@ -1,6 +1,7 @@
 export const statistics = {
   to: "https://governordao.org/statistics",
   title: "Statistics",
+};
 
 export const applications = [
   { to: "https://stake.governordao.org/", title: "Stake" },
