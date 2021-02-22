@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../../assets/logos/governor-plain.png";
 import { Menu, X, ChevronDown, ChevronUp } from "react-feather";
-import { solutions, applications, resources, social } from "./items";
+import { statistics, applications, resources, social } from "./items";
 import "./style.scss";
 
 export default class Header extends Component {
@@ -127,7 +127,7 @@ export default class Header extends Component {
           <div
             className={`xs-nav-menu ${this.state.isExpanded ? "expanded" : ""}`}
           >
-            {this.getLink(solutions)}
+            {this.getLink(statistics)}
             {this.getAccordion("applications", applications)}
             {this.getAccordion("resources", resources)}
             {this.getAccordion("social", social)}
@@ -140,7 +140,7 @@ export default class Header extends Component {
       return (
         <>
           <div className="lg-nav-menu">
-            {this.getLink(solutions)}
+            {this.getLink(statistics)}
             {this.getAccordion("applications", applications)}
             {this.getAccordion("resources", resources)}
             {this.getAccordion("social", social)}
