@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import Web3 from "web3";
 import { toast } from "react-toastify";
 import { ConnectButton } from "./elements";
 
@@ -38,11 +37,8 @@ class Airdrop extends Component {
     this.airdropContract = null;
   }
 
-  componentDidMount() {
-    this.onAccountChange();
-    this.onNetworkChange();
-    this.setConnection();
-
+  async componentDidMount() {
+    await this.getProviderEvents();
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -73,6 +69,18 @@ class Airdrop extends Component {
     }
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.provider !== prevProps.provider) {
+      this.getProviderEvents();
+      this.setState({});
+    }
+  }
+
+  getWeb3 = async () => {
+    await this.props.getWeb3();
+    this.setState({});
+  };
+
   roundTo = (n, digits) => {
     var negative = false;
     if (digits === undefined) {
@@ -89,61 +97,6 @@ class Airdrop extends Component {
       n = (n * -1).toFixed(digits);
     }
     return n;
-  };
-
-  getWeb3 = async () => {
-    // Modern dapp browsers...
-    if (window.ethereum) {
-      this.web3 = new Web3(window.ethereum);
-      try {
-        await window.ethereum.enable().then((accounts) => {
-          this.connectMainnet(accounts);
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    // Legacy dapp browsers...
-    else if (window.web3) {
-      this.web3 = new Web3(Web3.currentProvider);
-      try {
-        await this.web3.eth.getAccounts().then((accounts) => {
-          this.connectMainnet(accounts);
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      toast.error(
-        "Non-Ethereum browser detected. You should consider trying MetaMask!"
-      );
-    }
-  };
-
-  connectMainnet = async (accounts) => {
-    await this.web3?.eth?.getChainId().then((x) => {
-      if (x === 1) {
-        this.setState({ account: accounts[0].toString(), isConnected: true });
-
-        this.GDAOContract = new this.web3.eth.Contract(
-          this.GDAOABI,
-          this.GDAOAddress
-        );
-        this.airdropContract = new this.web3.eth.Contract(
-          this.merkle.contractABI,
-          this.merkle.contractAddress
-        );
-
-        this.getAirdropStats();
-        var self = this;
-        this.statsInterval = setInterval(function () {
-          self.getAirdropStats();
-        }, 10000);
-      } else {
-        this.setState({ account: null });
-        toast.error("You need to be on the Ethereum Mainnet");
-      }
-    });
   };
 
   getAirdropStats = () => {
@@ -272,34 +225,34 @@ class Airdrop extends Component {
     }
   };
 
-  onAccountChange() {
-    window?.ethereum?.on("accountsChanged", (accounts) => {
-      if (
-        accounts.length > 0 &&
-        this.state.account !== accounts[0].toString()
-      ) {
-        this.setState({ account: accounts[0].toString() });
-      } else {
-        this.setState({ account: null });
-      }
+  getProviderEvents = async () => {
+    // Subscribe to accounts change
+    this.props.provider?.on("accountsChanged", (accounts) => {
+      console.log(accounts);
     });
-  }
 
-  onNetworkChange() {
-    window?.ethereum?.on("chainChanged", (chainId) => window.location.reload());
-  }
+    // Subscribe to chainId change
+    this.props.provider?.on("chainChanged", (chainId) => {
+      console.log(chainId);
+    });
 
-  setConnection = () => {
-    if (
-      this.state.isConnected &&
-      this.web3.utils.isAddress(this.state.account)
-    ) {
-      this.setState((prevState) => ({
-        isDropdownOpen: !prevState.isDropdownOpen,
-      }));
-    } else {
-      this.getWeb3();
-    }
+    // Subscribe to provider connection
+    this.props.provider?.on("connect", (info) => {
+      console.log(info);
+    });
+
+    // Subscribe to provider disconnection
+    this.props.provider?.on("disconnect", async (error) => {
+      if (
+        this.web3 &&
+        this.web3.currentProvider &&
+        this.web3.currentProvider.close
+      ) {
+        await this.web3.currentProvider.close();
+      }
+      await this.web3?.currentProvider?.close();
+      await this.web3Modal.clearCachedProvider();
+    });
   };
 
   render() {
@@ -310,7 +263,7 @@ class Airdrop extends Component {
             <div className="title-text">GDAO Airdrop</div>
             <ConnectButton
               account={this.state.account}
-              setConnection={this.setConnection}
+              setConnection={this.getWeb3}
             />
           </div>
           <div className="airdrop-subtitle">

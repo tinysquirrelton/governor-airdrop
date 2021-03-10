@@ -1,6 +1,10 @@
 @import "../../styles/breakpoints.scss";
 @import "../../styles/shadows.scss";
 
+.web3modal-modal-lightbox{
+  z-index: 100 !important;
+}
+
 .airdrop-container {
   display: block;
   position: relative;
