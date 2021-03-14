@@ -172,9 +172,12 @@ class Airdrop extends Component {
     }
     provider.on("disconnect", () => this.resetApp());
     provider.on("accountsChanged", async (accounts: string[]) => {
-	  console.log("new addy: " + accounts[0]);
       await this.setState({ account: accounts[0] });
+	  if(accounts[0] == null) {
+		  this.resetApp();
+	  }
     });
+	
     provider.on("chainChanged", async (chainId: number) => {
       const { web3 } = this.state;
       const networkId = await web3.eth.net.getId();
@@ -202,7 +205,9 @@ class Airdrop extends Component {
 	  networkId: 1,
 	  showModal: false,
 	  pendingRequest: false,
-	  result: null });
+	  result: null,
+      isAirdropClaimed: false,
+      isEligible: false });
   };
   
 
@@ -225,7 +230,7 @@ class Airdrop extends Component {
   };
 
   getAirdropStats = () => {
-	if(this.state.web3 != null) {
+	if(this.state.web3 != null && this.state.account != null) {
     if (
       this.merkle.claims[
         this.state.web3?.utils.toChecksumAddress(this.state.account)
