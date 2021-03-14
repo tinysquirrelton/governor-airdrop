@@ -13,7 +13,7 @@ import "./style.scss";
 
 import ConnectWallet from "../../connectWallet";
 
-var connection = new ConnectWallet();
+const connection = new ConnectWallet();
 
 class Airdrop extends Component {
   constructor(props) {
@@ -39,9 +39,11 @@ class Airdrop extends Component {
     this.rewardPoolAddress = rewardPoolAddress;
     this.GDAOContract = null;
     this.airdropContract = null;
+	this.web3 = connection.web3;
   }
 
   async componentDidMount() {
+	connection.connectWeb3();
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -223,7 +225,7 @@ class Airdrop extends Component {
           <div className="airdrop-title">
             <div className="title-text">GDAO Airdrop</div>
             <ConnectButton
-              account={this.state.account}
+              account={connection.address}
               setConnection={connection.connectWeb3Manual}
             />
           </div>
