@@ -6,8 +6,8 @@ import Loader from "./loader";
 import OnPageChange from "../utilities/hocs/OnPageChange";
 
 // HEADER & FOOTER
-//import Header from "../governor-common/components/header/Header";
-//import Footer from "../governor-common/components/footer/Footer";
+import Header from "../governor-common/components/header/Header";
+import Footer from "../governor-common/components/footer/Footer";
 
 // LAZY IMPORT
 const Airdrop = lazy(() => import("../components/airdrop"));
@@ -18,6 +18,7 @@ export default class Routes extends Component {
       <BrowserRouter>
         <Suspense fallback={<Loader />}>
           <OnPageChange>
+            <Header />
             <Switch>
               <Route
                 exact
@@ -32,6 +33,7 @@ export default class Routes extends Component {
               />
               <Redirect to={"/404"} />
             </Switch>
+            <Footer />
           </OnPageChange>
         </Suspense>
       </BrowserRouter>
