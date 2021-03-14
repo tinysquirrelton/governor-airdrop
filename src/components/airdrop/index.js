@@ -11,6 +11,10 @@ import { merkle } from "../../data/constants/merkle";
 
 import "./style.scss";
 
+import ConnectWallet from "../../connectWallet";
+
+var connection = new ConnectWallet();
+
 class Airdrop extends Component {
   constructor(props) {
     super(props);
@@ -38,7 +42,6 @@ class Airdrop extends Component {
   }
 
   async componentDidMount() {
-    await this.getProviderEvents();
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -68,18 +71,6 @@ class Airdrop extends Component {
       this.setState({ isAirdropLive: true });
     }
   }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.provider !== prevProps.provider) {
-      this.getProviderEvents();
-      this.setState({});
-    }
-  }
-
-  getWeb3 = async () => {
-    await this.props.getWeb3();
-    this.setState({});
-  };
 
   roundTo = (n, digits) => {
     var negative = false;
@@ -225,36 +216,6 @@ class Airdrop extends Component {
     }
   };
 
-  getProviderEvents = async () => {
-    // Subscribe to accounts change
-    this.props.provider?.on("accountsChanged", (accounts) => {
-      console.log(accounts);
-    });
-
-    // Subscribe to chainId change
-    this.props.provider?.on("chainChanged", (chainId) => {
-      console.log(chainId);
-    });
-
-    // Subscribe to provider connection
-    this.props.provider?.on("connect", (info) => {
-      console.log(info);
-    });
-
-    // Subscribe to provider disconnection
-    this.props.provider?.on("disconnect", async (error) => {
-      if (
-        this.web3 &&
-        this.web3.currentProvider &&
-        this.web3.currentProvider.close
-      ) {
-        await this.web3.currentProvider.close();
-      }
-      await this.web3?.currentProvider?.close();
-      await this.web3Modal.clearCachedProvider();
-    });
-  };
-
   render() {
     return (
       <div className="max-width-container">
@@ -263,7 +224,7 @@ class Airdrop extends Component {
             <div className="title-text">GDAO Airdrop</div>
             <ConnectButton
               account={this.state.account}
-              setConnection={this.getWeb3}
+              setConnection={connection.connectWeb3Manual}
             />
           </div>
           <div className="airdrop-subtitle">
