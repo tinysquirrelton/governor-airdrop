@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import Web3 from "web3";
+import Web3Modal from "web3modal";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 import { toast } from "react-toastify";
 import { ConnectButton } from "./elements";
 
@@ -10,7 +12,37 @@ import { GDAOABI } from "../../data/abi/GDAOABI";
 import { GDAOAddress, rewardPoolAddress } from "../../data/constants/constants";
 import { merkle } from "../../data/constants/merkle";
 
+import ConnectWallet from "../../connectWallet";
+
 import "./style.scss";
+
+
+const providerOptions = {
+  walletconnect: {
+    package: WalletConnectProvider, // required
+    options: {
+      infuraId: "e35323bc24d243c6a971cefcaaa55953", // required
+    },
+  },
+};
+
+
+function initWeb3(provider: any) {
+  const web3: any = new Web3(provider);
+
+  web3.eth.extend({
+    methods: [
+      {
+        name: "chainId",
+        call: "eth_chainId",
+        outputFormatter: web3.utils.hexToNumber
+      }
+    ]
+  });
+
+  return web3;
+}
+
 
 class Airdrop extends Component {
   constructor(props) {
@@ -18,7 +50,17 @@ class Airdrop extends Component {
     this.state = {
       isConnected: false,
       isDropdownOpen: false,
-      account: null,
+	  fetching: false,
+	  
+      account: "",
+	  web3: null,
+	  provider: null,
+	  chainId: 1,
+	  networkId: 1,
+	  showModal: false,
+	  pendingRequest: false,
+	  result: null,
+	
       day: 0,
       percentage: 0,
       unclaimed: 0,
@@ -36,13 +78,19 @@ class Airdrop extends Component {
     this.rewardPoolAddress = rewardPoolAddress;
     this.GDAOContract = null;
     this.airdropContract = null;
+	
+    this.web3Modal = new Web3Modal({
+      network: "mainnet", // optional
+      cacheProvider: true, // optional
+      providerOptions,
+      disableInjectedProvider: false,
+    });
+	
   }
-
-  componentDidMount() {
-    this.onAccountChange();
-    this.onNetworkChange();
-    this.setConnection();
-
+  
+  async componentDidMount() {
+	this.connectWeb3();
+	
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -72,6 +120,96 @@ class Airdrop extends Component {
       this.setState({ isAirdropLive: true });
     }
   }
+  
+  
+  connectWeb3Manual = async () => {
+    await this.resetApp();
+    this.connectWeb3();
+  }
+  
+  connectWeb3 = async () => {
+    const provider = await this.web3Modal.connect();
+    await this.subscribeProvider(provider);
+    const web3: any = initWeb3(provider);
+    const accounts = await web3.eth.getAccounts();
+    const account = accounts[0];
+    const networkId = await web3.eth.net.getId();
+    const chainId = await web3.eth.chainId();
+
+    await this.setState({
+      web3,
+      provider,
+      isConnected: true,
+      account,
+      chainId,
+      networkId
+    });
+	
+	
+    if (chainId === 1) {
+      this.GDAOContract = new web3.eth.Contract(
+        this.GDAOABI,
+        this.GDAOAddress
+      );
+      this.airdropContract = new web3.eth.Contract(
+        this.merkle.contractABI,
+        this.merkle.contractAddress
+      );
+      this.getAirdropStats();
+      var self = this;
+      this.statsInterval = setInterval(function () {
+        self.getAirdropStats();
+      }, 10000);
+    } else {
+      this.setState({ account: null });
+      toast.error("You need to be on the Ethereum Mainnet");
+    }
+  };
+
+  subscribeProvider = async (provider: any) => {
+    if (!provider.on) {
+      return;
+    }
+    provider.on("disconnect", () => this.resetApp());
+    provider.on("accountsChanged", async (accounts: string[]) => {
+      await this.setState({ account: accounts[0] });
+	  if(accounts[0] == null) {
+		  this.resetApp();
+	  }
+    });
+	
+    provider.on("chainChanged", async (chainId: number) => {
+      const { web3 } = this.state;
+      const networkId = await web3.eth.net.getId();
+      await this.setState({ chainId, networkId });
+    });
+
+    provider.on("networkChanged", async (networkId: number) => {
+      const { web3 } = this.state;
+      const chainId = await web3.eth.chainId();
+      await this.setState({ chainId, networkId });
+    });
+  };
+  
+  resetApp = async () => {
+    const { web3 } = this.state;
+    if (web3 && web3.currentProvider && web3.currentProvider.close) {
+      await web3.currentProvider.close();
+    }
+    await this.web3Modal.clearCachedProvider();
+    this.setState({ account: "",
+	  web3: null,
+	  provider: null,
+	  isConnected: false,
+	  chainId: 1,
+	  networkId: 1,
+	  showModal: false,
+	  pendingRequest: false,
+	  result: null,
+      isAirdropClaimed: false,
+      isEligible: false });
+  };
+  
 
   roundTo = (n, digits) => {
     var negative = false;
@@ -91,65 +229,11 @@ class Airdrop extends Component {
     return n;
   };
 
-  getWeb3 = async () => {
-    // Modern dapp browsers...
-    if (window.ethereum) {
-      this.web3 = new Web3(window.ethereum);
-      try {
-        await window.ethereum.enable().then((accounts) => {
-          this.connectMainnet(accounts);
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    // Legacy dapp browsers...
-    else if (window.web3) {
-      this.web3 = new Web3(Web3.currentProvider);
-      try {
-        await this.web3.eth.getAccounts().then((accounts) => {
-          this.connectMainnet(accounts);
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    } else {
-      toast.error(
-        "Non-Ethereum browser detected. You should consider trying MetaMask!"
-      );
-    }
-  };
-
-  connectMainnet = async (accounts) => {
-    await this.web3?.eth?.getChainId().then((x) => {
-      if (x === 1) {
-        this.setState({ account: accounts[0].toString(), isConnected: true });
-
-        this.GDAOContract = new this.web3.eth.Contract(
-          this.GDAOABI,
-          this.GDAOAddress
-        );
-        this.airdropContract = new this.web3.eth.Contract(
-          this.merkle.contractABI,
-          this.merkle.contractAddress
-        );
-
-        this.getAirdropStats();
-        var self = this;
-        this.statsInterval = setInterval(function () {
-          self.getAirdropStats();
-        }, 10000);
-      } else {
-        this.setState({ account: null });
-        toast.error("You need to be on the Ethereum Mainnet");
-      }
-    });
-  };
-
   getAirdropStats = () => {
+	if(this.state.web3 != null && this.state.account != null) {
     if (
       this.merkle.claims[
-        this.web3.utils.toChecksumAddress(this.state.account)
+        this.state.web3?.utils.toChecksumAddress(this.state.account)
       ] != null
     ) {
       this.setState({ isEligible: true });
@@ -180,7 +264,7 @@ class Airdrop extends Component {
         .call()
         .then((result) => {
           this.setState({
-            unclaimed: parseFloat(this.web3.utils.fromWei(result, "ether")),
+            unclaimed: parseFloat(this.state.web3?.utils.fromWei(result, "ether")),
           });
         });
       this.airdropContract.methods
@@ -192,7 +276,7 @@ class Airdrop extends Component {
             .call()
             .then((result) => {
               this.setState({
-                burned: parseFloat(this.web3.utils.fromWei(result, "ether")),
+                burned: parseFloat(this.state.web3?.utils.fromWei(result, "ether")),
               });
             });
         });
@@ -201,7 +285,7 @@ class Airdrop extends Component {
         .call()
         .then((result) => {
           let rewardResult = parseFloat(
-            this.web3.utils.fromWei(result, "ether")
+            this.state.web3?.utils.fromWei(result, "ether")
           );
 
           this.setState({ reward: rewardResult });
@@ -210,7 +294,7 @@ class Airdrop extends Component {
         this.airdropContract.methods
           .isClaimed(
             this.merkle.claims[
-              this.web3.utils.toChecksumAddress(this.state.account)
+              this.state.web3?.utils.toChecksumAddress(this.state.account)
             ].index
           )
           .call()
@@ -218,9 +302,9 @@ class Airdrop extends Component {
             this.setState({
               isAirdropClaimed: isClaimed,
               claimable: this.roundTo(
-                this.web3.utils.fromWei(
+                this.state.web3.utils.fromWei(
                   this.merkle.claims[
-                    this.web3.utils.toChecksumAddress(this.state.account)
+                    this.state.web3?.utils.toChecksumAddress(this.state.account)
                   ].amount,
                   "ether"
                 ) * rewardMultiplier,
@@ -230,21 +314,22 @@ class Airdrop extends Component {
           });
       }
     }
+    }
   };
 
   claimAirdrop = () => {
-    if (this.web3 != null && this.airdropContract != null) {
+    if (this.state.web3 != null && this.airdropContract != null) {
       this.airdropContract.methods
         .claim(
           this.merkle.claims[
-            this.web3.utils.toChecksumAddress(this.state.account)
+            this.state.web3.utils.toChecksumAddress(this.state.account)
           ].index,
           this.state.account,
           this.merkle.claims[
-            this.web3.utils.toChecksumAddress(this.state.account)
+            this.state.web3.utils.toChecksumAddress(this.state.account)
           ].amount,
           this.merkle.claims[
-            this.web3.utils.toChecksumAddress(this.state.account)
+            this.state.web3.utils.toChecksumAddress(this.state.account)
           ].proof
         )
         .send({
@@ -272,36 +357,6 @@ class Airdrop extends Component {
     }
   };
 
-  onAccountChange() {
-    window?.ethereum?.on("accountsChanged", (accounts) => {
-      if (
-        accounts.length > 0 &&
-        this.state.account !== accounts[0].toString()
-      ) {
-        this.setState({ account: accounts[0].toString() });
-      } else {
-        this.setState({ account: null });
-      }
-    });
-  }
-
-  onNetworkChange() {
-    window?.ethereum?.on("chainChanged", (chainId) => window.location.reload());
-  }
-
-  setConnection = () => {
-    if (
-      this.state.isConnected &&
-      this.web3.utils.isAddress(this.state.account)
-    ) {
-      this.setState((prevState) => ({
-        isDropdownOpen: !prevState.isDropdownOpen,
-      }));
-    } else {
-      this.getWeb3();
-    }
-  };
-
   render() {
     return (
       <div className="max-width-container">
@@ -310,7 +365,7 @@ class Airdrop extends Component {
             <div className="title-text">GDAO Airdrop</div>
             <ConnectButton
               account={this.state.account}
-              setConnection={this.setConnection}
+              setConnection={this.connectWeb3Manual}
             />
           </div>
           <div className="airdrop-subtitle">

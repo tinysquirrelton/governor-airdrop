@@ -6,6 +6,10 @@ import { X } from "react-feather";
 const Close = ({ closeToast }) => <X size={20} onClick={closeToast} />;
 
 export default class App extends Component {
+  constructor(props) {
+    super(props);
+  }
+
   render() {
     return (
       <>
@@ -17,7 +21,7 @@ export default class App extends Component {
           draggable={true}
           draggablePercent={25}
         />
-        <Routes />
+		<Routes />
       </>
     );
   }
