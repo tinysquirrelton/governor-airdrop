@@ -20,7 +20,11 @@ export default class Routes extends Component {
           <OnPageChange>
             <Header />
             <Switch>
-              <Route exact path={"/"} component={Airdrop} />
+              <Route
+                exact
+                path={"/"}
+                render={() => <Airdrop {...this.props} />}
+              />
               <Route
                 path={"/404"}
                 render={() =>
