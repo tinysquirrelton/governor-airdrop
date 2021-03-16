@@ -16,7 +16,6 @@ import ConnectWallet from "../../connectWallet";
 
 import "./style.scss";
 
-
 const providerOptions = {
   walletconnect: {
     package: WalletConnectProvider, // required
@@ -26,7 +25,6 @@ const providerOptions = {
   },
 };
 
-
 function initWeb3(provider: any) {
   const web3: any = new Web3(provider);
 
@@ -35,14 +33,13 @@ function initWeb3(provider: any) {
       {
         name: "chainId",
         call: "eth_chainId",
-        outputFormatter: web3.utils.hexToNumber
-      }
-    ]
+        outputFormatter: web3.utils.hexToNumber,
+      },
+    ],
   });
 
   return web3;
 }
-
 
 class Airdrop extends Component {
   constructor(props) {
@@ -50,17 +47,17 @@ class Airdrop extends Component {
     this.state = {
       isConnected: false,
       isDropdownOpen: false,
-	  fetching: false,
-	  
+      fetching: false,
+
       account: "",
-	  web3: null,
-	  provider: null,
-	  chainId: 1,
-	  networkId: 1,
-	  showModal: false,
-	  pendingRequest: false,
-	  result: null,
-	
+      web3: null,
+      provider: null,
+      chainId: 1,
+      networkId: 1,
+      showModal: false,
+      pendingRequest: false,
+      result: null,
+
       day: 0,
       percentage: 0,
       unclaimed: 0,
@@ -78,19 +75,18 @@ class Airdrop extends Component {
     this.rewardPoolAddress = rewardPoolAddress;
     this.GDAOContract = null;
     this.airdropContract = null;
-	
+
     this.web3Modal = new Web3Modal({
       network: "mainnet", // optional
       cacheProvider: true, // optional
       providerOptions,
       disableInjectedProvider: false,
     });
-	
   }
-  
+
   async componentDidMount() {
-	this.connectWeb3();
-	
+    this.connectWeb3();
+
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -120,13 +116,12 @@ class Airdrop extends Component {
       this.setState({ isAirdropLive: true });
     }
   }
-  
-  
+
   connectWeb3Manual = async () => {
     await this.resetApp();
     this.connectWeb3();
-  }
-  
+  };
+
   connectWeb3 = async () => {
     const provider = await this.web3Modal.connect();
     await this.subscribeProvider(provider);
@@ -142,15 +137,11 @@ class Airdrop extends Component {
       isConnected: true,
       account,
       chainId,
-      networkId
+      networkId,
     });
-	
-	
+
     if (chainId === 1) {
-      this.GDAOContract = new web3.eth.Contract(
-        this.GDAOABI,
-        this.GDAOAddress
-      );
+      this.GDAOContract = new web3.eth.Contract(this.GDAOABI, this.GDAOAddress);
       this.airdropContract = new web3.eth.Contract(
         this.merkle.contractABI,
         this.merkle.contractAddress
@@ -173,11 +164,11 @@ class Airdrop extends Component {
     provider.on("disconnect", () => this.resetApp());
     provider.on("accountsChanged", async (accounts: string[]) => {
       await this.setState({ account: accounts[0] });
-	  if(accounts[0] == null) {
-		  this.resetApp();
-	  }
+      if (accounts[0] == null) {
+        this.resetApp();
+      }
     });
-	
+
     provider.on("chainChanged", async (chainId: number) => {
       const { web3 } = this.state;
       const networkId = await web3.eth.net.getId();
@@ -190,26 +181,27 @@ class Airdrop extends Component {
       await this.setState({ chainId, networkId });
     });
   };
-  
+
   resetApp = async () => {
     const { web3 } = this.state;
     if (web3 && web3.currentProvider && web3.currentProvider.close) {
       await web3.currentProvider.close();
     }
     await this.web3Modal.clearCachedProvider();
-    this.setState({ account: "",
-	  web3: null,
-	  provider: null,
-	  isConnected: false,
-	  chainId: 1,
-	  networkId: 1,
-	  showModal: false,
-	  pendingRequest: false,
-	  result: null,
+    this.setState({
+      account: "",
+      web3: null,
+      provider: null,
+      isConnected: false,
+      chainId: 1,
+      networkId: 1,
+      showModal: false,
+      pendingRequest: false,
+      result: null,
       isAirdropClaimed: false,
-      isEligible: false });
+      isEligible: false,
+    });
   };
-  
 
   roundTo = (n, digits) => {
     var negative = false;
@@ -230,90 +222,95 @@ class Airdrop extends Component {
   };
 
   getAirdropStats = () => {
-	if(this.state.web3 != null && this.state.account != null) {
-    if (
-      this.merkle.claims[
-        this.state.web3?.utils.toChecksumAddress(this.state.account)
-      ] != null
-    ) {
-      this.setState({ isEligible: true });
-    }
+    if (this.state.web3 != null && this.state.account != null) {
+      if (
+        this.merkle.claims[
+          this.state.web3?.utils.toChecksumAddress(this.state.account)
+        ] != null
+      ) {
+        this.setState({ isEligible: true });
+      }
 
-    let currentTimestamp = Math.round(Date.now() / 1000);
-    let daysPassed =
-      Math.round(
+      let currentTimestamp = Math.round(Date.now() / 1000);
+      let daysPassed = Math.round(
         (currentTimestamp - this.merkle.startTimestamp) / 60 / 60 / 24
-      ) - 1;
-    let rewardMultiplier = 0.1;
+      );
+      let rewardMultiplier = 0.1;
 
-    if (daysPassed > 90) {
-      rewardMultiplier = 1;
-    } else if (daysPassed < 0) {
-      rewardMultiplier = 0;
-    } else {
-      rewardMultiplier += daysPassed * 0.01;
-    }
+      if (daysPassed > 90) {
+        rewardMultiplier = 1;
+      } else if (daysPassed < 0) {
+        rewardMultiplier = 0;
+      } else {
+        rewardMultiplier += daysPassed * 0.01;
+      }
 
-    let percentageToday = Math.round(rewardMultiplier * 100);
+      let percentageToday = Math.round(rewardMultiplier * 100);
 
-    this.setState({ percentage: percentageToday, day: daysPassed });
+      this.setState({ percentage: percentageToday, day: daysPassed });
 
-    if (this.airdropContract != null && this.GDAOContract != null) {
-      this.GDAOContract.methods
-        .balanceOf(this.merkle.contractAddress)
-        .call()
-        .then((result) => {
-          this.setState({
-            unclaimed: parseFloat(this.state.web3?.utils.fromWei(result, "ether")),
-          });
-        });
-      this.airdropContract.methods
-        .burnAddress()
-        .call()
-        .then((burnAddress) => {
-          this.GDAOContract.methods
-            .balanceOf(burnAddress)
-            .call()
-            .then((result) => {
-              this.setState({
-                burned: parseFloat(this.state.web3?.utils.fromWei(result, "ether")),
-              });
-            });
-        });
-      this.GDAOContract.methods
-        .balanceOf(this.rewardPoolAddress)
-        .call()
-        .then((result) => {
-          let rewardResult = parseFloat(
-            this.state.web3?.utils.fromWei(result, "ether")
-          );
-
-          this.setState({ reward: rewardResult });
-        });
-      if (this.state.isEligible) {
-        this.airdropContract.methods
-          .isClaimed(
-            this.merkle.claims[
-              this.state.web3?.utils.toChecksumAddress(this.state.account)
-            ].index
-          )
+      if (this.airdropContract != null && this.GDAOContract != null) {
+        this.GDAOContract.methods
+          .balanceOf(this.merkle.contractAddress)
           .call()
-          .then((isClaimed) => {
+          .then((result) => {
             this.setState({
-              isAirdropClaimed: isClaimed,
-              claimable: this.roundTo(
-                this.state.web3.utils.fromWei(
-                  this.merkle.claims[
-                    this.state.web3?.utils.toChecksumAddress(this.state.account)
-                  ].amount,
-                  "ether"
-                ) * rewardMultiplier,
-                2
+              unclaimed: parseFloat(
+                this.state.web3?.utils.fromWei(result, "ether")
               ),
             });
           });
+        this.airdropContract.methods
+          .burnAddress()
+          .call()
+          .then((burnAddress) => {
+            this.GDAOContract.methods
+              .balanceOf(burnAddress)
+              .call()
+              .then((result) => {
+                this.setState({
+                  burned: parseFloat(
+                    this.state.web3?.utils.fromWei(result, "ether")
+                  ),
+                });
+              });
+          });
+        this.GDAOContract.methods
+          .balanceOf(this.rewardPoolAddress)
+          .call()
+          .then((result) => {
+            let rewardResult = parseFloat(
+              this.state.web3?.utils.fromWei(result, "ether")
+            );
+
+            this.setState({ reward: rewardResult });
+          });
+        if (this.state.isEligible) {
+          this.airdropContract.methods
+            .isClaimed(
+              this.merkle.claims[
+                this.state.web3?.utils.toChecksumAddress(this.state.account)
+              ].index
+            )
+            .call()
+            .then((isClaimed) => {
+              this.setState({
+                isAirdropClaimed: isClaimed,
+                claimable: this.roundTo(
+                  this.state.web3.utils.fromWei(
+                    this.merkle.claims[
+                      this.state.web3?.utils.toChecksumAddress(
+                        this.state.account
+                      )
+                    ].amount,
+                    "ether"
+                  ) * rewardMultiplier,
+                  2
+                ),
+              });
+            });
+        }
       }
-    }
     }
   };
 
