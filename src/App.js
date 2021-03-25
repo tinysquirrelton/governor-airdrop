@@ -4,15 +4,6 @@ import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
 import { X } from "react-feather";
 
-
-
-// * CONSTANTS
-import { merkle } from "./data/constants/merkle";
-import { GDAOAddress, rewardPoolAddress } from "./data/constants/constants";
-
-// * ABI
-import { GDAOABI } from "./data/abi/GDAOABI";
-
 const Close = ({ closeToast }) => <X size={20} onClick={closeToast} />;
 
 export default class App extends Component {
