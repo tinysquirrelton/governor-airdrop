@@ -1,3 +1,5 @@
+import React, { Component } from "react";
+import { toast } from "react-toastify";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
@@ -25,7 +27,7 @@ const initWeb3 = async (provider) => {
   return web3;
 };
 
-export default class WalletConnect {
+export default class WalletConnect extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -45,7 +47,7 @@ export default class WalletConnect {
   }
 
   connectWeb3Manual = async () => {
-    this.web3Modal.clearCachedProvider();
+    await this.resetConnection();
     this.connectWeb3();
   };
 
@@ -105,7 +107,7 @@ export default class WalletConnect {
       await this.state.web3.currentProvider.close();
     }
     await this.web3Modal.clearCachedProvider();
-    this.setState({
+    await this.setState({
       isConnected: false,
       account: "",
       web3: null,
@@ -113,5 +115,6 @@ export default class WalletConnect {
       chainId: 1,
       networkId: 1,
     });
+    this.props.onResetConnect();
   };
 }
