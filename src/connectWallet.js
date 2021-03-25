@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { toast } from "react-toastify";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
@@ -13,31 +13,19 @@ const providerOptions = {
   },
 };
 
-const initWeb3 = async (provider) => {
-  const web3 = new Web3(provider);
-  await web3.eth.extend({
-    methods: [
-      {
-        name: "chainId",
-        call: "eth_chainId",
-        outputFormatter: web3.utils.hexToNumber,
-      },
-    ],
-  });
-  return web3;
-};
-
-export default class WalletConnect extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isConnected: false,
-      account: "",
-      web3: null,
-      provider: null,
-      chainId: 1,
-      networkId: 1,
-    };
+export default class WalletConnect {
+  constructor(onConnect, onResetConnect) {
+    // Passed functions
+    this.onConnect = onConnect;
+    this.onResetConnect = onResetConnect;
+    // Variables
+    this.isConnected = false;
+    this.account = "";
+    this.web3 = null;
+    this.provider = null;
+    this.chainId = 1;
+    this.networkId = 1;
+    // Modal
     this.web3Modal = new Web3Modal({
       network: "mainnet", // optional
       cacheProvider: true, // optional
@@ -51,28 +39,38 @@ export default class WalletConnect extends Component {
     this.connectWeb3();
   };
 
-  connectWeb3 = async () => {
-    const provider = await this.web3Modal.connect();
-    await this.subscribeProvider(provider);
-    const web3 = initWeb3(provider);
-    const accounts = await web3.eth.getAccounts();
-    const account = accounts[0];
-    const networkId = await web3.eth.net.getId();
-    const chainId = await web3.eth.chainId();
+  getWeb3 = () => {
+    return this.web3;
+  };
 
-    await this.setState({
-      web3,
-      provider,
-      isConnected: true,
-      account,
-      chainId,
-      networkId,
+  initWeb3 = async (provider) => {
+    const web3 = new Web3(provider);
+    await web3.eth.extend({
+      methods: [
+        {
+          name: "chainId",
+          call: "eth_chainId",
+          outputFormatter: web3.utils.hexToNumber,
+        },
+      ],
     });
+    return web3;
+  };
 
-    if (chainId === 1) {
-      this.props.onConnect();
+  connectWeb3 = async () => {
+    this.provider = await this.web3Modal.connect();
+    await this.subscribeProvider(this.provider);
+    this.web3 = await this.initWeb3(this.provider);
+    const accounts = await this.web3.eth.getAccounts();
+    this.account = accounts[0];
+    this.networkId = await this.web3.eth.net.getId();
+    this.chainId = await this.web3.eth.chainId();
+    this.isConnected = true;
+
+    if (this.chainId === 1) {
+      this.onConnect(this.web3);
     } else {
-      this.setState({ account: null });
+      this.account = null;
       toast.error("You need to be on the Ethereum Mainnet");
     }
   };
@@ -83,38 +81,38 @@ export default class WalletConnect extends Component {
     }
     provider.on("disconnect", () => this.resetConnection());
     provider.on("accountsChanged", async (accounts) => {
-      await this.setState({ account: accounts[0] });
+      this.account = accounts[0];
       if (accounts[0] == null) {
-        this.resetConnection();
+        await this.resetConnection();
       }
     });
     provider.on("chainChanged", async (chainId) => {
-      const networkId = await this.state.web3.eth.net.getId();
-      await this.setState({ chainId, networkId });
+      const networkId = await this.web3.eth.net.getId();
+      this.chainId = chainId;
+      this.networkId = networkId;
     });
     provider.on("networkChanged", async (networkId) => {
-      const chainId = await this.state.web3.eth.chainId();
-      await this.setState({ chainId, networkId });
+      const chainId = await this.web3.eth.chainId();
+      this.chainId = chainId;
+      this.networkId = networkId;
     });
   };
 
   resetConnection = async () => {
     if (
-      this.state.web3 &&
-      this.state.web3.currentProvider &&
-      this.state.web3.currentProvider.close
+      this.web3 &&
+      this.web3.currentProvider &&
+      this.web3.currentProvider.close
     ) {
-      await this.state.web3.currentProvider.close();
+      await this.web3.currentProvider.close();
     }
     await this.web3Modal.clearCachedProvider();
-    await this.setState({
-      isConnected: false,
-      account: "",
-      web3: null,
-      provider: null,
-      chainId: 1,
-      networkId: 1,
-    });
-    this.props.onResetConnect();
+    this.isConnected = false;
+    this.account = "";
+    this.web3 = null;
+    this.provider = null;
+    this.chainId = 1;
+    this.networkId = 1;
+    await this.onResetConnect();
   };
 }

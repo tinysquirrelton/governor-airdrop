@@ -2,11 +2,24 @@ import React, { Component } from "react";
 import { toast } from "react-toastify";
 import { ConnectButton } from "./elements";
 
+// * ABI
+import { GDAOABI } from "../../data/abi/GDAOABI";
+
 // * CONSTANTS
-import { rewardPoolAddress } from "../../data/constants/constants";
+import { GDAOAddress, rewardPoolAddress } from "../../data/constants/constants";
 import { merkle } from "../../data/constants/merkle";
 
+// * WALLETCONNECT
+
+import WalletConnect from "../../connectWallet";
+
 import "./style.scss";
+
+// this.getAirdropStats();
+// var self = this;
+// this.statsInterval = setInterval(function () {
+//   self.getAirdropStats();
+// }, 10000);
 
 class Airdrop extends Component {
   constructor(props) {
@@ -23,13 +36,24 @@ class Airdrop extends Component {
       isAirdropLive: false,
       countdownString: "0:0:0",
     };
+    this.walletconnect = null;
+    this.web3 = null;
     this.merkle = merkle;
+    this.GDAOABI = GDAOABI;
+    this.GDAOAddress = GDAOAddress;
     this.rewardPoolAddress = rewardPoolAddress;
     this.GDAOContract = null;
     this.airdropContract = null;
   }
 
   async componentDidMount() {
+    this.walletconnect = await new WalletConnect(
+      this.onConnect,
+      this.onResetConnect
+    );
+    await this.walletconnect.connectWeb3();
+    this.web3 = await this.walletconnect.getWeb3();
+
     let now = new Date().getTime();
     let startCountdown = this.merkle.startTimestamp * 1000;
     let self = this;
@@ -60,6 +84,23 @@ class Airdrop extends Component {
     }
   }
 
+  onConnect = (web3) => {
+    this.GDAOContract = new web3.eth.Contract(this.GDAOABI, this.GDAOAddress);
+    this.airdropContract = new web3.eth.Contract(
+      this.merkle.contractABI,
+      this.merkle.contractAddress
+    );
+    // force a state update to get new values
+    this.setState({});
+  };
+
+  onResetConnect = () => {
+    this.setState({
+      isAirdropClaimed: false,
+      isEligible: false,
+    });
+  };
+
   roundTo = (n, digits) => {
     var negative = false;
     if (digits === undefined) {
@@ -79,10 +120,10 @@ class Airdrop extends Component {
   };
 
   getAirdropStats = () => {
-    if (this.props.web3 != null && this.props.account != null) {
+    if (this.web3 != null && this.walletconnect?.account != null) {
       if (
         this.merkle.claims[
-          this.props.web3?.utils.toChecksumAddress(this.props.account)
+          this.web3?.utils.toChecksumAddress(this.walletconnect?.account)
         ] != null
       ) {
         this.setState({ isEligible: true });
@@ -112,9 +153,7 @@ class Airdrop extends Component {
           .call()
           .then((result) => {
             this.setState({
-              unclaimed: parseFloat(
-                this.props.web3?.utils.fromWei(result, "ether")
-              ),
+              unclaimed: parseFloat(this.web3?.utils.fromWei(result, "ether")),
             });
           });
         this.airdropContract.methods
@@ -126,9 +165,7 @@ class Airdrop extends Component {
               .call()
               .then((result) => {
                 this.setState({
-                  burned: parseFloat(
-                    this.props.web3?.utils.fromWei(result, "ether")
-                  ),
+                  burned: parseFloat(this.web3?.utils.fromWei(result, "ether")),
                 });
               });
           });
@@ -137,7 +174,7 @@ class Airdrop extends Component {
           .call()
           .then((result) => {
             let rewardResult = parseFloat(
-              this.props.web3?.utils.fromWei(result, "ether")
+              this.web3?.utils.fromWei(result, "ether")
             );
 
             this.setState({ reward: rewardResult });
@@ -146,7 +183,7 @@ class Airdrop extends Component {
           this.airdropContract.methods
             .isClaimed(
               this.merkle.claims[
-                this.props.web3?.utils.toChecksumAddress(this.props.account)
+                this.web3?.utils.toChecksumAddress(this.walletconnect?.account)
               ].index
             )
             .call()
@@ -154,10 +191,10 @@ class Airdrop extends Component {
               this.setState({
                 isAirdropClaimed: isClaimed,
                 claimable: this.roundTo(
-                  this.props.web3.utils.fromWei(
+                  this.web3.utils.fromWei(
                     this.merkle.claims[
-                      this.props.web3?.utils.toChecksumAddress(
-                        this.props.account
+                      this.web3?.utils.toChecksumAddress(
+                        this.walletconnect?.account
                       )
                     ].amount,
                     "ether"
@@ -172,22 +209,22 @@ class Airdrop extends Component {
   };
 
   claimAirdrop = () => {
-    if (this.props.web3 != null && this.airdropContract != null) {
+    if (this.web3 != null && this.airdropContract != null) {
       this.airdropContract.methods
         .claim(
           this.merkle.claims[
-            this.props.web3.utils.toChecksumAddress(this.props.account)
+            this.web3.utils.toChecksumAddress(this.walletconnect?.account)
           ].index,
           this.props.account,
           this.merkle.claims[
-            this.props.web3.utils.toChecksumAddress(this.props.account)
+            this.web3.utils.toChecksumAddress(this.walletconnect?.account)
           ].amount,
           this.merkle.claims[
-            this.props.web3.utils.toChecksumAddress(this.props.account)
+            this.web3.utils.toChecksumAddress(this.walletconnect?.account)
           ].proof
         )
         .send({
-          from: this.props.account,
+          from: this.walletconnect?.account,
         })
         .on("error", function (error) {
           toast.error("Transaction was not successful");
@@ -218,8 +255,8 @@ class Airdrop extends Component {
           <div className="airdrop-title">
             <div className="title-text">GDAO Airdrop</div>
             <ConnectButton
-              account={this.props.account}
-              setConnection={this.props.connectWeb3Manual}
+              account={this.walletconnect?.account}
+              setConnection={this.walletconnect?.connectWeb3Manual}
             />
           </div>
           <div className="airdrop-subtitle">
@@ -245,7 +282,6 @@ class Airdrop extends Component {
               Airdrop Contract
             </a>
           </div>
-
           <div className="airdrop-details">
             <div className="upper">
               <div className="details-item">
@@ -263,7 +299,7 @@ class Airdrop extends Component {
             </div>
             <div className="lower">
               {this.state.isAirdropLive ? (
-                this.props.isConnected ? (
+                this.walletconnect?.isConnected ? (
                   this.state.isEligible ? (
                     this.state.isAirdropClaimed ? (
                       <>
@@ -326,9 +362,3 @@ class Airdrop extends Component {
 }
 
 export default Airdrop;
-
-// this.getAirdropStats();
-// var self = this;
-// this.statsInterval = setInterval(function () {
-//   self.getAirdropStats();
-// }, 10000);
