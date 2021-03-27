@@ -11,7 +11,7 @@ import { merkle } from "../../data/constants/merkle";
 
 // * WALLETCONNECT
 
-import WalletConnect from "../../connectWallet";
+import WalletConnect from "../../governor-common/components/walletconnect/WalletConnect";
 
 import "./style.scss";
 
@@ -76,12 +76,11 @@ class Airdrop extends Component {
     } else {
       this.setState({ isAirdropLive: true });
     }
-    
+
     this.getAirdropStats();
     this.statsInterval = setInterval(function () {
       self.getAirdropStats();
     }, 5000);
-    
   }
 
   onConnect = (web3) => {
@@ -120,7 +119,11 @@ class Airdrop extends Component {
   };
 
   getAirdropStats = () => {
-    if (this.web3 != null && this.walletconnect?.account != null && this.web3?.utils.isAddress(this.walletconnect?.account)) {
+    if (
+      this.web3 != null &&
+      this.walletconnect?.account != null &&
+      this.web3?.utils.isAddress(this.walletconnect?.account)
+    ) {
       if (
         this.merkle.claims[
           this.web3?.utils.toChecksumAddress(this.walletconnect?.account)
