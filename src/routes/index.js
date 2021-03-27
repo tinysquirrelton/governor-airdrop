@@ -10,7 +10,7 @@ import Header from "../governor-common/components/header/Header";
 import Footer from "../governor-common/components/footer/Footer";
 
 // LAZY IMPORT
-const Airdrop = lazy(() => import("../components/airdrop"));
+// const Airdrop = lazy(() => import("../components/airdrop"));
 
 export default class Routes extends Component {
   render() {
@@ -20,11 +20,11 @@ export default class Routes extends Component {
           <OnPageChange>
             <Header />
             <Switch>
-              <Route
+              {/* <Route
                 exact
                 path={"/"}
                 render={() => <Airdrop {...this.props} />}
-              />
+              /> */}
               <Route
                 path={"/404"}
                 render={() =>
