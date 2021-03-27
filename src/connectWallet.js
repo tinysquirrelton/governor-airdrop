@@ -1,4 +1,3 @@
-import React from "react";
 import { toast } from "react-toastify";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
