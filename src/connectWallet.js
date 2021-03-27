@@ -6,9 +6,9 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const providerOptions = {
   walletconnect: {
-    package: WalletConnectProvider, // required
+    package: WalletConnectProvider,
     options: {
-      infuraId: "e35323bc24d243c6a971cefcaaa55953", // required
+      infuraId: "e35323bc24d243c6a971cefcaaa55953",
     },
   },
 };
@@ -18,7 +18,7 @@ export default class WalletConnect {
     // Passed functions
     this.onConnect = onConnect;
     this.onResetConnect = onResetConnect;
-    // Variables
+    // Values
     this.isConnected = false;
     this.account = "";
     this.web3 = null;
